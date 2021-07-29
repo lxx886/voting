@@ -18,7 +18,7 @@ The VoterBDI agent achieves the following functions:
 7. when an agent submits its ballot, it will notify the CollectBDI agent to collect that ballot.
 
 Here is a flow chart of the above functions.
-![the collectorBDI](https://github.com/lxx886/voting/blob/main/images/the%20voterBDI.bmp)
+![the voterBDI](https://github.com/lxx886/voting1/blob/main/images/the%20voterBDI.bmp)
 
 
 
@@ -28,4 +28,4 @@ The CollectorBDI agent achieves the following functions:
 
 Here is a flow chart of the above functions.
 
-![the collectorBDI](https://raw.githubusercontent.com/lxx886/voting/main/images/the%20CollectBDI.bmp)
+![the collectorBDI](https://github.com/lxx886/voting1/blob/main/images/the%20CollectBDI.bmp)
