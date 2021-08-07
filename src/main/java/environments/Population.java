@@ -67,21 +67,26 @@ public class Population {
     //public IComponentIdentifier getNeighbor(List<IComponentIdentifier>nei, Voter v)
     public Map<IComponentIdentifier,String> getNeighbor(List< Map<IComponentIdentifier,String>>nei, Voter v)
     {
-        Map<IComponentIdentifier,String> temp = new HashMap<IComponentIdentifier,String>();
+
         for (int i = voters.size()-1; i >=0 ; i--)
         {
             //find the new neighbor
             if(!v.getId().equals(voters.get(i).getId()))
             {
+                Map<IComponentIdentifier,String> temp = new HashMap<IComponentIdentifier,String>();
                 //if(!nei.contains(voters.get(i).getId()))
-                temp.put(this.voters.get(i).getId(),this.voters.get(i).getMyBallot());
-                if(!nei.contains(temp))
+                temp.put(voters.get(i).getId(),voters.get(i).getMyBallot());
+                if(nei==null)
+                {
+                    return temp;
+                }
+                if(nei!=null&&!nei.contains(temp))
                 {
                     //temp.put(this.voters.get(i).getId(),this.voters.get(i).getMyBallot());
                     //return voters.get(i).getId();
                     return temp;
                 }
-                temp.clear();
+                //temp.clear();
             }
         }
         return null;
@@ -92,30 +97,41 @@ public class Population {
      * */
     //public ArrayList<IComponentIdentifier> getNeigbors(Voter v)
     public ArrayList<Map<IComponentIdentifier,String>> getNeigbors(Voter v) {
-        //ArrayList<IComponentIdentifier> res = new ArrayList<IComponentIdentifier>();
-        ArrayList<Map<IComponentIdentifier,String>> res;
 
-        if(v!=null && this.voters.contains(v)){
-            if(this.voters.size()==1){
+        ArrayList<Map<IComponentIdentifier,String>> res;
+        if(v!=null && this.voters.contains(v)) {
+            if (this.voters.size() == 1) {
                 return null;
             }
 
+
             res = new ArrayList<Map<IComponentIdentifier,String>>();
-            //the number of neighbors should not be too large
-            int size = ((voters.size()/1)==0)?1:(voters.size()/1);
+        //the number of neighbors should not be too large
+        //int size = ((voters.size()/1)==0)?1:(voters.size()/1);
+            int size = voters.size();
             int index = new Random().nextInt(size);
-            Map<IComponentIdentifier,String> temp = new HashMap<IComponentIdentifier,String>();
+           // Map<IComponentIdentifier,String> temp = new HashMap<IComponentIdentifier,String>();
             for(int i = 0; i <= index ; i++)
             {
+                Map<IComponentIdentifier,String> temp = new HashMap<IComponentIdentifier,String>();
+
                 if(!this.voters.get(i).getId().equals(v.getId()))
                 {
                     temp.put(this.voters.get(i).getId(),this.voters.get(i).getMyBallot());
+                    res.add(temp);
+                    //temp.clear();
                 }
             }
-            if(temp!=null){
-                res.add(temp);
+            if(res!=null && res.size()!=0)
+            {
+             //   res.add(temp);
+                return  res;
             }
-            return  res;
+            else
+            {
+                return null;
+            }
+
         }
         return null;
     }

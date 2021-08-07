@@ -59,12 +59,12 @@ public class SimpleVotingPlan {
                 voter.setMyBallot(maxCan);
                 System.out.println(this.voter.getId()+"'s ballot changed from "+ voter.getpBallot()  + " to "+ voter.getMyBallot() );
 
-                IFuture<VoterBDI.notifyNewBallotGoal> fut= rplan.dispatchSubgoal(capa. new notifyNewBallotGoal());
+                IFuture<VoterBDI.NotifyNewBallotGoal> fut= rplan.dispatchSubgoal(capa. new NotifyNewBallotGoal());
                // fut.get();
                 Future<Boolean> ret = new Future<Boolean>();
-                fut.addResultListener(new ExceptionDelegationResultListener<VoterBDI.notifyNewBallotGoal,Boolean>(ret)
+                fut.addResultListener(new ExceptionDelegationResultListener<VoterBDI.NotifyNewBallotGoal,Boolean>(ret)
                                       {
-                                          public void customResultAvailable(VoterBDI.notifyNewBallotGoal result)
+                                          public void customResultAvailable(VoterBDI.NotifyNewBallotGoal result)
                                           {
                                               //do not run into this block
                                               System.out.println("dispatch simple goal of notifyNewBallotGoal is achieved "+ result.isPlanSuccess());

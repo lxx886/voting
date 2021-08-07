@@ -34,12 +34,11 @@ public class CollectBallotPlan {
                 value =   this.voter.getScores().get(this.ballot);
             }
             this.voter.getScores().put(this.ballot,value+1);
-            System.out.println("Plan: "+getClass().getSimpleName()+" of "+voter.getId()+" "+", after adding ballot of "+this.ballot +", thes score profile of " +this.voter.getId()+ " is: "+ this.voter.getScores());
-           // return  Future.TRUE;
+            System.out.println("Plan: "+getClass().getSimpleName()+" of "+voter.getId()+" "+", after adding ballot of "+this.ballot +", the score profile of " +this.voter.getId()+ " is: "+ this.voter.getScores());
             return true;
         }
         System.out.println("plan error: ballot is "+ this.ballot);
-        //return  Future.FALSE;
+
         return  false;
     }
 
@@ -50,11 +49,11 @@ public class CollectBallotPlan {
 
     @PlanAborted
     public  void abort(){
-        System.out.println("Plan: "+getClass().getSimpleName()+" of "+voter.getId()+" "+ " aborted");
+        System.out.println("Plan: "+getClass().getSimpleName()+" in "+voter.getId()+" "+ " aborted");
     }
 
     @PlanPassed
     public void pass(){
-        System.out.println("Plan: "+getClass().getSimpleName()+" of "+voter.getId()+" "+" passed");
+        System.out.println("Plan: "+getClass().getSimpleName()+" in "+voter.getId()+" "+" passed");
     }
 }

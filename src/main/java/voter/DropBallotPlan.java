@@ -26,7 +26,7 @@ public class DropBallotPlan {
         int value = 0;
         if(this.ballot!=null && this.ballot!="" && this.ballot!=" ")
         {
-            if(  this.voter.getScores().containsKey(this.ballot)){
+            if( this.voter.getScores().containsKey(this.ballot)){
                 value =   this.voter.getScores().get(this.ballot);
                 this.voter.getScores().put(this.ballot,value-1);
 

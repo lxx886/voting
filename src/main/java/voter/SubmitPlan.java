@@ -9,7 +9,7 @@ import jadex.bridge.service.RequiredServiceInfo;
 import jadex.bridge.service.component.IRequiredServicesFeature;
 import jadex.commons.future.IResultListener;
 
-/*SUBMIT the revised ballot*/
+/*submit the sincere and revised ballot*/
 @Plan
 public class SubmitPlan {
     private Voter voter;

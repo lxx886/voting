@@ -16,6 +16,7 @@ import jadex.bridge.service.component.IRequiredServicesFeature;
 import jadex.commons.future.*;
 import jadex.micro.annotation.*;
 import jadex.rules.eca.ChangeInfo;
+import tool.MapTool;
 import voteStrategy.VoteStrategyImp;
 
 import java.util.ArrayList;
@@ -31,8 +32,8 @@ import java.util.Map;
                 @Plan(trigger=@Trigger(goals = VoterBDI.PerformInformALLDisconectGoal.class),body=@Body(InformALLDisconectPlan.class)),
                 @Plan(trigger=@Trigger(goals = VoterBDI.PerformInformALLConectGoal.class),body=@Body(VoterBDI.InformALLConnectPlan.class)),
                 @Plan(trigger = @Trigger(goals = VoterBDI.SimpleVotingGoal.class),body = @Body(SimpleVotingPlan.class)),
-                @Plan(trigger = @Trigger(goals = VoterBDI.submitBallotGoal.class),body= @Body(SubmitPlan.class)),
-                @Plan(trigger = @Trigger(goals = VoterBDI.notifyNewBallotGoal.class),body= @Body(notifyNewBallotPlan.class))
+                @Plan(trigger = @Trigger(goals = VoterBDI.SubmitBallotGoal.class),body= @Body(SubmitPlan.class)),
+                @Plan(trigger = @Trigger(goals = VoterBDI.NotifyNewBallotGoal.class),body= @Body(notifyNewBallotPlan.class))
         }
 )
 @Service
@@ -43,7 +44,6 @@ import java.util.Map;
 
 public class VoterBDI implements IVoterService{
 
-
     @Agent
     protected IInternalAccess agent;
 
@@ -53,32 +53,25 @@ public class VoterBDI implements IVoterService{
     @AgentFeature
     protected IExecutionFeature execFeature;
 
-    //five candidates
     @Belief
-    protected  Population population = Population.getInstance(4);
+    protected  Population population = Population.getInstance(4);//4 candidates
 
     @Belief
     protected Voter voter;
 
-//    @Belief
-//    protected List<IComponentIdentifier> neighbors;
+    /*
+    * store the neighbor relationship, key:cid;value:ballot
+    * */
     @Belief
     protected List<Map<IComponentIdentifier,String>> neighbors;
 
-
     private  boolean isNotInformedToAdd ;
-
 
     private  boolean isNewCreated;
 
-
-
     private boolean isAlive;
 
-
     private  boolean isNotInformedToDelete;
-
-
 
     private Map<String , Integer>myScores = new HashMap<>();
     @Belief
@@ -94,20 +87,14 @@ public class VoterBDI implements IVoterService{
     @Belief(dynamic = true)
     String myBallot= (voter==null)?null:voter.getMyBallot();
 
-
     @AgentCreated
     public void init()
     {
         //initiate the voter
         System.out.println("cid"+agent.getComponentIdentifier());
 
-
         voter = new Voter(population.getCandidates().getCandidatesPosition());
 
-        //for testing
-        //voter.setScores(myScores);
-
-        //voter.setId(agent.getComponentIdentifier().toString());
         voter.setId(agent.getComponentIdentifier());
 
         voter.castTrueBallot(new VoteStrategyImp(),"lexico");
@@ -115,27 +102,26 @@ public class VoterBDI implements IVoterService{
         this.isNewCreated = true;
         this.isNotInformedToDelete = false;
         this.isAlive = true;
-        this.myScores = this.voter.getScores(); //if using simplePropertyChangeSupport?
+        this.myScores = this.voter.getScores();
         boolean addSuccess = this.population.add(voter);
         if(addSuccess)
         {
             this.neighbors = new ArrayList<Map<IComponentIdentifier,String>>();
             this.neighbors = this.population.getNeigbors(voter);
-            System.out.println("the new voter is " + this.voter + ", and its e pre neighbor of is "+ neighbors);
+            System.out.println("the new voter is " + this.voter + "; " +
+                    "\n, and its pre neighbor of is "+ neighbors);
         }
         else{
             System.out.println("can not join the population");
-            //the component should be killed automatically
         }
     }
 
     @AgentKilled
     public void destroy(){
-        //first inform all its neighbors, successfully finishing it
         isAlive= false;
         this.population.remove(this.voter);
         boolean removeVoterFlag = (boolean) bdiFeature.dispatchTopLevelGoal(new PerformInformALLDisconectGoal(this.neighbors,this.voter) ).get();
-        System.out.println("remove voter "+ this.voter.getId() +" "+ removeVoterFlag);
+        System.out.println("killing voter "+ this.voter.getId() +" "+ removeVoterFlag);
     }
 
     @AgentBody
@@ -263,7 +249,7 @@ public class VoterBDI implements IVoterService{
     }
 
 
-    @Goal
+    @Goal(deliberation=@Deliberation(inhibits = SimpleVotingGoal.class))
     public  class SimpleVotingGoal
     {
         @GoalParameter
@@ -284,19 +270,37 @@ public class VoterBDI implements IVoterService{
             System.out.println("Goal: " + getClass().getSimpleName()+ " of " + voter.getId()+ ", new scores is "+getMyScores());
         }
 
-
-
         public boolean isPlanSuccess() {
             return isPlanSuccess;
+        }
+
+
+
+        /** inhibit other simple votingGoal when the score is the same or
+         * the candidate with the largest ballots is the same
+         * */
+        @GoalInhibit(SimpleVotingGoal.class)
+        public boolean inhibitSimpleVotingGoal(@CheckNotNull SimpleVotingGoal other)
+        {
+           // return true;
+            boolean ret = getMyScores().equals(other.myScores);
+            if(!ret)
+            {
+                MapTool<String, Integer> maptool = new MapTool<>();
+                String popularCan = maptool.getKeyOfMaxMap(getMyScores());
+                String popularCanOther = maptool.getKeyOfMaxMap(other.myScores);
+                ret = popularCan.equals(popularCanOther);
+            }
+            //System.out.println("inhibit method: "+this + " " +this.myScores+", \n"+other+ " "+ other.myScores+" "+ret);
+            return ret;
         }
 
 
     }
 
     @Goal
-    public static class submitBallotGoal
+    public static class SubmitBallotGoal
     {
-
         @GoalParameter
         private Voter gvoter;
         @GoalParameter
@@ -309,7 +313,7 @@ public class VoterBDI implements IVoterService{
             return isCollectedSuccess;
         }
 
-        public submitBallotGoal(VoterBDI voterBDI)
+        public SubmitBallotGoal(VoterBDI voterBDI)
         {
             this.gvoter = voterBDI.getVoter();
             isCollectedSuccess= false;
@@ -322,7 +326,7 @@ public class VoterBDI implements IVoterService{
         {
             ChangeInfo<Object> change = ((ChangeInfo<Object>)event.getValue());
             Object value = change.getValue();
-            System.out.println("the type of the event "+ event.getType() +", the changed value is "+ value);
+            //System.out.println("the type of the event "+ event.getType() +", the changed value is "+ value);
             if(value instanceof  String)
             {
                 String type = event.getType();
@@ -330,15 +334,13 @@ public class VoterBDI implements IVoterService{
                 //System.out.println("the type of the event "+ type +", the changed value is "+ newBallot);
 
                 if(newBallot!=null && !newBallot.equals("")){
-                    return  new submitBallotGoal(voterBDI);
+                    return  new SubmitBallotGoal(voterBDI);
                 }else{
                     return null;
                 }
             }
             return null;
         }
-
-
     }
 
 //    @Goal
@@ -387,7 +389,7 @@ public class VoterBDI implements IVoterService{
             System.out.println("!!!constructor of "+ getClass().getSimpleName()+ " in "+ gvoter.getId());
             Map<IComponentIdentifier,String> neig= new HashMap<IComponentIdentifier,String>();
             neig = voterBDI.getPopulation().getNeighbor(neighbors, gvoter);
-            if(neig!=null)
+            if(neig!=null && !neighbors.contains(neig))
             {
                 voterBDI.setNotInformedToAdd(true);
                 neighbors.add(neig);
@@ -396,7 +398,7 @@ public class VoterBDI implements IVoterService{
 
         }
 
-        @GoalCreationCondition(rawevents = @RawEvent( value=ChangeEvent.PLANFINISHED,secondc=SubmitPlan.class))
+        @GoalCreationCondition(rawevents = @RawEvent( value=ChangeEvent.PLANFINISHED,secondc=InformALLConnectPlan.class))
         public static AddNeighborGoal checkCreate(@CheckNotNull VoterBDI voterBDI)
         {
             return new AddNeighborGoal(voterBDI);
@@ -432,7 +434,7 @@ public class VoterBDI implements IVoterService{
 
 
     @Goal
-    public class notifyNewBallotGoal
+    public class NotifyNewBallotGoal
     {
         @GoalParameter
         private List<Map<IComponentIdentifier,String>> neighbors;
@@ -445,7 +447,7 @@ public class VoterBDI implements IVoterService{
         @GoalResult
         private boolean isPlanSuccess;
 
-        public notifyNewBallotGoal() {
+        public NotifyNewBallotGoal() {
             this.neighbors = getNeighbors();
             this.pvoter = getVoter();
             this.agent = getAgent();
@@ -541,9 +543,7 @@ public class VoterBDI implements IVoterService{
     }
 
 
-     /*when agents are alive, respond to added edge*/
-    //@Plan(trigger = @Trigger(factaddeds="neighbors"))
-    //this need to be changed, just find the
+
     @Plan(trigger = @Trigger(factaddeds="neighbors"))
     public IFuture<Void> notifyNeighborToAddPlan(ChangeEvent event, IPlan rplan){
         if(!isNewCreated && this.isNotInformedToAdd==true)
@@ -565,7 +565,6 @@ public class VoterBDI implements IVoterService{
            {
                 //inform the neighbor
                 System.out.println(this.voter.getId()+" trying to notify neighbor of " + neiVoterID);
-                //get all the services provided by all the agents
 
                IVoterService ser = agent.getComponentFeature
                         (IRequiredServicesFeature.class).searchService(IVoterService.class, neicid).get();
@@ -778,13 +777,24 @@ public class VoterBDI implements IVoterService{
 
                 //update the score
                 String ballot = DeleVoter.getMyBallot();
+                //get the stored ballot of DeleVoter
+                for(int i = 0 ; i < getNeighbors().size(); i++)
+                {
+                    if(getNeighbors().get(i).containsKey(DeleVoter.getId()))
+                    {
+                        String preBallot = getNeighbors().get(i).get(DeleVoter.getId());
+                        ballot = preBallot;
+                        break;
+                    }
+                }
+
+
                 if(this.voter.getScores().containsKey(ballot))
                 {
                     int value = this.voter.getScores().get(ballot);
                     this.voter.getScores().put(ballot,value-1);
                     setMyScores( this.voter.getScores());
                 }
-
                 //change the score belief
 
             }else
@@ -826,7 +836,7 @@ public class VoterBDI implements IVoterService{
                String temp = getNeighbors().get(i).get(curVoter.getId());
                if(!temp.equals(curVoter.getpBallot()))
                {
-                   System.out.println("warning: "+ this.voter.getId() +" did not collect ballot of "+ curVoter.getId());
+                   System.out.println("warning: "+ this.voter.getId() +" did not collect ballot of "+curVoter.getpBallot()+" " + curVoter.getId());
                    //preBallot =temp;
                }
                preBallot =temp;

@@ -18,13 +18,16 @@ import java.awt.*;
 import java.util.HashMap;
 import java.util.Map;
 
+/*
+* the
+* */
 @Agent
 @Service
 @ProvidedServices({@ProvidedService(type = ICenterService.class,scope=RequiredServiceInfo.SCOPE_GLOBAL)})
 
-public class collectorBDI implements ICenterService{
+public class CollectorBDI implements ICenterService{
 
-    //store all the voters who have submitted their ballots: key:id,value:ballot
+    //store all the voters who have ever submitted their ballots: key:id,value:ballot
     private Map<IComponentIdentifier,String> tPopulationMap;
 
     //store the score of all candidate:key:candidate,value:number of ballots
@@ -35,11 +38,9 @@ public class collectorBDI implements ICenterService{
 
     private  JFrame f;
     private  PropertiesPanel pp;
-//    private  JTextField tfc1;
-//    private  JTextField tfc2;
-//    private  JTextField tfc3;
+
     private  JTextField[] tf;
-    private  int LEN = 4;
+    private  int LEN = 4; // the number of candidate
     private String[] Candidates;
 
 
@@ -49,8 +50,6 @@ public class collectorBDI implements ICenterService{
     public void init(){
         tPopulationMap= new HashMap<IComponentIdentifier,String>();
         tScoreMap = new HashMap<String,Double>();
-
-
     }
 
     @AgentBody
@@ -60,7 +59,6 @@ public class collectorBDI implements ICenterService{
         f.setLocationRelativeTo(null);
         f.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         pp = new PropertiesPanel();
-        //int Len = 3;
         Candidates = new String[LEN];
         tf = new JTextField[LEN+1];
         for(int i = 0 ; i < Candidates.length; i++){
@@ -68,7 +66,6 @@ public class collectorBDI implements ICenterService{
             tf[i] = pp.createTextField(Candidates[i], "0", false);
         }
         tf[LEN] = pp.createTextField("winner", "", false);
-        //final  JTextField jfw =  pp.createTextField("winner", "", false);
 
         f.add(pp, BorderLayout.CENTER);
         f.pack();
@@ -78,9 +75,9 @@ public class collectorBDI implements ICenterService{
     @Goal
     public  class calculateWinnerGoal
     {
+        //when the total score changes, the CollectorBDI agent will determine a new winner
         @GoalCreationCondition(beliefs ="tScoreMap" )
         public calculateWinnerGoal() {
-
         }
     }
 
@@ -94,7 +91,10 @@ public class collectorBDI implements ICenterService{
         System.out.println("--------------------winner is: "+ winner);
     }
 
-
+/**collect the ballot of voter
+ * @param voter, the voter which submits its ballot
+ * @return boolean, whether
+ * */
 
 
     /*collect the ballot of voter
@@ -139,7 +139,6 @@ public class collectorBDI implements ICenterService{
         }
         /*2. change the population, storing the current ballot
          */
-        //tPopulationMap.put(voter.getId(),voter.getpBallot());
         tPopulationMap.put(voter.getId(),voter.getMyBallot());
         System.out.println("the total score: "+ tScoreMap);
 
@@ -148,6 +147,7 @@ public class collectorBDI implements ICenterService{
         return res;
     }
 
+    //show the score of each candidate
     public void showBallot()
     {
         for(int i = 0; i < LEN; i++)
